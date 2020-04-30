@@ -1,8 +1,15 @@
 ---
 title: 'Assignment #1  Air Pollution'
 subtitle: 'Datascience Specialization: John Hopkins University'
+author: Hugo O. Matus
 output:
-  github_document:  
+  github_document:
+    html_preview: true
+    toc: true
+    toc_depth: 2
+    fig_width: 5
+    fig_height: 5
+      
   pdf_document:
     toc: yes
   html_document:

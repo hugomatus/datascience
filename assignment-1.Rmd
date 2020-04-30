@@ -2,10 +2,11 @@
 title: 'Assignment #1  Air Pollution'
 subtitle: 'Datascience Specialization: John Hopkins University'
 output:
+  github_document:  
+  pdf_document:
+    toc: yes
   html_document:
     theme: paper
-    toc: yes
-  pdf_document:
     toc: yes
 ---
 

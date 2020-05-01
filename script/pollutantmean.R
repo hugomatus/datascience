@@ -103,7 +103,7 @@ corr <- function(directory, threshold = 0) {
     num_complete_cases <- sum(complete.cases(data))
     
     if (num_complete_cases > threshold) {
-      data_cc <- data[complete.cases(data),]
+      data_cc <- data[complete.cases(data), ]
       
       
       x <- data_cc[, 2]
@@ -126,4 +126,146 @@ corr <- function(directory, threshold = 0) {
   setwd(old.dir)
   
   return(results)
+  
+}
+
+
+best <- function(state, outcome) {
+  ## Read outcome data
+  old.dir <- getwd()
+  data.dir <- "data/rprog_data_ProgAssignment3-data/"
+  setwd(data.dir)
+  
+  data <-
+    read.csv(
+      "outcome-of-care-measures.csv",
+      na.strings = "Not Available",
+      stringsAsFactors = FALSE,
+      check.names = TRUE
+    )
+  
+  setwd(old.dir)
+  
+  ## Check that state and outcome are valid
+  
+  outcome_values <-
+    c(
+      "heart attack" = 4,
+      "heart failure" = 5,
+      "pneumonia" = 6
+    )
+  
+  ## state check
+  if (length(which(state.abb == state)) == 0) {
+    stop(call. = FALSE,
+         paste("in best(", state, ", ", outcome, ")", " : invalid state"))
+  }
+  
+  ## outcome check
+  if (length(which(names(outcome_values) == outcome)) == 0) {
+    stop(call. = FALSE,
+         paste("in best(", state, ", ", outcome, ")", " :  invalid outcome"))
+  }
+  
+  ## Return hospital name in that state with lowest 30-day death
+  ## rate
+  
+  mortality_30_day <- data[, c(1, 2, 7, 11, 17, 23)]
+  
+  ## filter and get data for state requested
+  obs <- mortality_30_day[mortality_30_day[, 3] == state,]
+  
+  ## order filtered data by outcome and by hospital name
+  obs <- obs[order(obs[, outcome_values[outcome]], obs[, 2]),]
+  obs <- obs[complete.cases(obs[,outcome_values[outcome]]),]
+  
+  return(head(obs[, c(2, outcome_values[outcome])]))
+  
+}
+
+
+rankhospital <- function(state, outcome, num = "best") {
+  ## Read outcome data
+  old.dir <- getwd()
+  data.dir <- "data/rprog_data_ProgAssignment3-data/"
+  setwd(data.dir)
+  
+  data <-
+    read.csv(
+      "outcome-of-care-measures.csv",
+      na.strings = "Not Available",
+      stringsAsFactors = FALSE,
+      check.names = TRUE
+    )
+  
+  setwd(old.dir)
+  
+  ## Check that state and outcome are valid
+  
+  outcome_values <-
+    c(
+      "heart attack" = 4,
+      "heart failure" = 5,
+      "pneumonia" = 6
+    )
+  
+  ## state check
+  if (length(which(state.abb == state)) == 0) {
+    stop(call. = FALSE,
+         paste("in best(", state, ", ", outcome, ")", " : invalid state"))
+  }
+  
+  ## outcome check
+  if (length(which(names(outcome_values) == outcome)) == 0) {
+    stop(call. = FALSE,
+         paste("in best(", state, ", ", outcome, ")", " :  invalid outcome"))
+  }
+  
+  ## Return hospital name in that state with lowest 30-day death
+  ## rate
+  
+  mortality_30_day <- data[, c(1, 2, 7, 11, 17, 23)]
+  
+  ## filter and get data for state requested
+  obs <- mortality_30_day[mortality_30_day[, 3] == state,]
+  
+  ## order filtered data by outcome and by hospital name
+  obs <- obs[order(obs[, outcome_values[outcome]], obs[, 2]),]
+  obs <- obs[complete.cases(obs[,outcome_values[outcome]]),]
+  
+  if (num == "best") {
+    obs <- obs[1, c(2,outcome_values[outcome])]
+    
+  } else if (num == "worst") {
+    obs <- (obs[nrow(obs), c(2,outcome_values[outcome])])
+  } else {
+    obs <- (obs[num, c(2,outcome_values[outcome])])
+  }
+  
+  names(obs) <- c("Hospital", "Outcome")
+  return(obs)
+}
+
+#---
+
+
+rankall <- function(outcome, num = "best") {
+  ## Read outcome data
+  ## Check that state and outcome are valid
+  ## For each state, find the hospital of the given rank
+  ## Return a data frame with the hospital names and the
+  ## (abbreviated) state name
+  
+  df <- data.frame(hospital = character(0), state = character(0))
+  
+  for (s in sort(state.abb)) {
+    
+    e <- rankhospital(s, outcome, num)
+    
+    if (!is.na(e)) {
+      df <- rbind(df,data.frame(e, "state" = s))
+    }
+  }
+  
+  return(df)
 }

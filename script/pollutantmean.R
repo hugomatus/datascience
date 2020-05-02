@@ -1,3 +1,19 @@
+load_files <- function(data.dir, id = 1:332) {
+  data.file.names <- sort(list.files(data.dir), decreasing = FALSE)
+  
+  data <- data.frame()
+  
+  for (val in id) {
+    #print(data.file.names[val])
+    file.path.name <-
+      paste(data.dir, data.file.names[val], sep = "")
+    data <-
+      rbind(data, read.csv(file.path.name, na.strings = "NA"))
+  }
+  
+  return(data)
+}
+
 pollutantmean <- function(directory, pollutant, id = 1:2) {
   ## 'directory' character vector of length 1 indicating the location of the csv.
   ## 'pollutant' character vector indicating the name of the pollutant for which we will calculate the mean.
@@ -6,25 +22,8 @@ pollutantmean <- function(directory, pollutant, id = 1:2) {
   
   ##"Date","sulfate","nitrate","ID"
   
-  old.dir <- getwd()
-  setwd(directory)
-  
-  data <- data.frame()
-  for (val in id) {
-    if (val < 10) {
-      data <-
-        rbind(data, read.csv(paste("00", val, ".csv", sep = ""), na.strings = "NA"))
-    } else if (val < 100) {
-      data <-
-        rbind(data, read.csv(paste("0", val, ".csv", sep = ""), na.strings = "NA"))
-    } else {
-      data <-
-        rbind(data, read.csv(paste(val, ".csv", sep = ""), na.strings = "NA"))
-    }
-  }
-  #data <- data[complete.cases(data[pollutant]),][pollutant]
+  data <- load_files(directory, id)
   avg <- mean(data[, pollutant], na.rm = TRUE)
-  setwd(old.dir)
   
   return(avg)
 }
@@ -40,34 +39,55 @@ complete <- function(directory, id = 1:332) {
   ## ...
   ## where 'id' is the monitor ID number and the nobs is the number of complete cases
   
-  old.dir <- getwd()
-  setwd(directory)
+  #load files, extract complete cases only and split by monitor id
+  data <- load_files(directory, id)
+  data <- data[complete.cases(data), ]
+  data <- split(data, data$ID)
   
-  data_cc <- data.frame()
+  results <- c()
   
-  for (val in id) {
-    data <- data.frame()
-    if (val < 10) {
-      data <-
-        rbind(data, read.csv(paste("00", val, ".csv", sep = ""), na.strings = "NA"))
-    } else if (val < 100) {
-      data <-
-        rbind(data, read.csv(paste("0", val, ".csv", sep = ""), na.strings = "NA"))
-    } else {
-      data <-
-        rbind(data, read.csv(paste(val, ".csv", sep = ""), na.strings = "NA"))
-    }
-    data_cc <-
-      rbind(data_cc, c(id = val, nobs = sum(complete.cases(data))))
+  for (item in data) {
+    #pop monitor_id off the col with name ID
+    monitor_id <- item[1, 'ID']
+    num_obs <- nrow(item)
+    results <- rbind(results, c(id = monitor_id, nobs = num_obs))
   }
   
-  setwd(old.dir)
-  #data <- data[complete.cases(data),]
-  names(data_cc) <- c("id", "nobs")
-  
-  return(data_cc)
+  return(results)
 }
 
+complete_threshold <-
+  function(directory,
+           id = 1:332,
+           threshold = 0) {
+    ## 'directory' is a character vector of length 1 indicating the location of the CSV files
+    ## 'id' is an integer vector indicating the monitor ID numbers
+    ## Return a data frame of the form:
+    ## id  nodbs
+    ## 1  117
+    ## 2 1041
+    ## ...
+    ## where 'id' is the monitor ID number and the nobs is the number of complete cases
+    
+    #load files, extract complete cases only and split by monitor id
+    data <- load_files(directory, id)
+    data <- data[complete.cases(data), ]
+    data <- split(data, data$ID)
+    
+    results <- c()
+    
+    for (item in data) {
+      #pop monitor_id off the col with name ID
+      monitor_id <- item[1, 'ID']
+      num_obs <- nrow(item)
+      
+      if (num_obs > threshold) {
+        results <- rbind(results, item)
+      }
+    }
+    
+    return(results)
+  }
 
 corr <- function(directory, threshold = 0) {
   ## 'directory' is a character vector of length 1 indicating the location of the CSV files
@@ -76,57 +96,29 @@ corr <- function(directory, threshold = 0) {
   ## NOTE: Do not round the results
   
   # vector to hold results of cor()
-  results <- c(0)
-  
-  old.dir <- getwd()
-  setwd(directory)
-  
-  data_cc <- data.frame()
-  
   id <- 1:332
+  results <- NULL
+  data <- complete_threshold(directory, id, threshold)
   
-  count <- 0
+  data_by_id <- NULL
   
-  for (val in id) {
-    data <- data.frame()
-    if (val < 10) {
-      data <-
-        rbind(data, read.csv(paste("00", val, ".csv", sep = ""), na.strings = "NA"))
-    } else if (val < 100) {
-      data <-
-        rbind(data, read.csv(paste("0", val, ".csv", sep = ""), na.strings = "NA"))
-    } else {
-      data <-
-        rbind(data, read.csv(paste(val, ".csv", sep = ""), na.strings = "NA"))
-    }
-    
-    num_complete_cases <- sum(complete.cases(data))
-    
-    if (num_complete_cases > threshold) {
-      data_cc <- data[complete.cases(data), ]
-      
-      
-      x <- data_cc[, 2]
-      y <- data_cc[, 3]
-      
-      z <- cor(x,
-               y,
-               use = "complete.obs",
-               method = c("pearson", "kendall", "spearman"))
-      
-      if (count != 0) {
-        results <- c(results, z)
-      } else {
-        results <- c(z)
-      }
-      count <- count + 1
-    }
-    
+  if (!is.null(data)) {
+    data_by_id <- split(data, data$ID)
   }
-  setwd(old.dir)
+  
+  for (item in data_by_id) {
+    x <- item[, 2]
+    y <- item[, 3]
+    
+    z <- cor(x,
+             y,
+             use = "complete.obs",
+             method = c("pearson", "kendall", "spearman"))
+    
+    results <- c(results, z)
+  }
   
   return(results)
-  
 }
 
 
@@ -177,7 +169,7 @@ best <- function(state, outcome) {
   
   ## order filtered data by outcome and by hospital name
   obs <- obs[order(obs[, outcome_values[outcome]], obs[, 2]),]
-  obs <- obs[complete.cases(obs[,outcome_values[outcome]]),]
+  obs <- obs[complete.cases(obs[, outcome_values[outcome]]),]
   
   return(head(obs[, c(2, outcome_values[outcome])]))
   
@@ -231,15 +223,15 @@ rankhospital <- function(state, outcome, num = "best") {
   
   ## order filtered data by outcome and by hospital name
   obs <- obs[order(obs[, outcome_values[outcome]], obs[, 2]),]
-  obs <- obs[complete.cases(obs[,outcome_values[outcome]]),]
+  obs <- obs[complete.cases(obs[, outcome_values[outcome]]),]
   
   if (num == "best") {
-    obs <- obs[1, c(2,outcome_values[outcome])]
+    obs <- obs[1, c(2, outcome_values[outcome])]
     
   } else if (num == "worst") {
-    obs <- (obs[nrow(obs), c(2,outcome_values[outcome])])
+    obs <- (obs[nrow(obs), c(2, outcome_values[outcome])])
   } else {
-    obs <- (obs[num, c(2,outcome_values[outcome])])
+    obs <- (obs[num, c(2, outcome_values[outcome])])
   }
   
   names(obs) <- c("Hospital", "Outcome")
@@ -259,11 +251,10 @@ rankall <- function(outcome, num = "best") {
   df <- data.frame(hospital = character(0), state = character(0))
   
   for (s in sort(state.abb)) {
-    
     e <- rankhospital(s, outcome, num)
     
     if (!is.na(e)) {
-      df <- rbind(df,data.frame(e, "state" = s))
+      df <- rbind(df, data.frame(e, "state" = s))
     }
   }
   

@@ -55,34 +55,35 @@ coded as NA.
 <!-- end list -->
 
 ``` r
-pollutantmean <- function(directory, pollutant, id = 1:2) {
-  
-  ## 'directory' character vector of length 1 indicating the location of the csv.
-  ## 'pollutant' character vector indicating the name of the pollutant for which we will calculate the mean.
-  ## 'id' integer vector indicating the montor id to use.
-  ## Return the mean of the pollutant cross all monitors.
-
-  ##"Date","sulfate","nitrate","ID"
-  
-  old.dir <- getwd()
-  setwd(directory) 
+##load files
+load_files <- function(data.dir, id = 1:332) {
+  data.file.names <- sort(list.files(data.dir), decreasing = FALSE)
   
   data <- data.frame()
   
   for (val in id) {
-    if (val < 10) {
-      data <- rbind(data,read.csv(paste("00",val,".csv", sep = ""),na.strings = "NA"))
-    } else if ( val < 100) {
-      data <- rbind(data,read.csv(paste("0",val,".csv", sep = ""),na.strings = "NA"))
-    } else {
-      data <- rbind(data,read.csv(paste(val,".csv", sep = ""),na.strings = "NA"))
-    }
+    #print(data.file.names[val])
+    file.path.name <-
+      paste(data.dir, data.file.names[val], sep = "")
+    data <-
+      rbind(data, read.csv(file.path.name, na.strings = "NA"))
   }
   
-  #data <- data[complete.cases(data[pollutant]),][pollutant]
-  avg <- mean(data[,pollutant],na.rm = TRUE)
-  setwd(old.dir)
-  avg
+  return(data)
+}
+
+pollutantmean <- function(directory, pollutant, id = 1:2) {
+  ## 'directory' character vector of length 1 indicating the location of the csv.
+  ## 'pollutant' character vector indicating the name of the pollutant for which we will calculate the mean.
+  ## 'id' integer vector indicating the montor id to use.
+  ## Return the mean of the pollutant cross all monitors.
+  
+  ##"Date","sulfate","nitrate","ID"
+  print('test')
+  data <- load_files(directory, id)
+  avg <- mean(data[, pollutant], na.rm = TRUE)
+  
+  return(avg)
 }
 ```
 
@@ -92,19 +93,19 @@ code to a file named pollutantmean.R.
 
 ``` r
 source("script/pollutantmean.R")
-pollutantmean("data/specdata", "sulfate", 1:10)
+pollutantmean("data/specdata/", "sulfate", 1:10)
 ```
 
     ## [1] 4.064128
 
 ``` r
-pollutantmean("data/specdata", "nitrate", 70:72)
+pollutantmean("data/specdata/", "nitrate", 70:72)
 ```
 
     ## [1] 1.706047
 
 ``` r
-pollutantmean("data/specdata", "nitrate", 23)
+pollutantmean("data/specdata/", "nitrate", 23)
 ```
 
     ## [1] 1.280833
@@ -130,27 +131,21 @@ complete <- function(directory, id = 1:332) {
   ## ...
   ## where 'id' is the monitor ID number and the nobs is the number of complete cases
   
-  old.dir <- getwd()
-  setwd(directory) 
+  #load files, extract complete cases only and split by monitor id
+  data <- load_files(directory, id)
+  data <- data[complete.cases(data),]
+  data <- split(data, data$ID)
   
-  data_cc <- data.frame()
+  results <- c()
   
-  for (val in id) {
-    data <- data.frame()
-       if (val < 10) {
-      data <- rbind(data,read.csv(paste("00",val,".csv", sep = ""),na.strings = "NA"))
-    } else if ( val < 100) {
-      data <- rbind(data,read.csv(paste("0",val,".csv", sep = ""),na.strings = "NA"))
-    } else {
-      data <- rbind(data,read.csv(paste(val,".csv", sep = ""),na.strings = "NA"))
-    }
-    data_cc <- rbind(data_cc,c(id = val,nobs = sum(complete.cases(data))))
+  for (item in data) {
+    #pop monitor_id off the col with name ID
+    monitor_id <- item[1, 'ID']
+    num_obs <- nrow(item)
+    results <- rbind(results, c(id = monitor_id, nobs = num_obs))
   }
   
-  setwd(old.dir)  
-  #data <- data[complete.cases(data),]
-  names(data_cc) <- c("id","nobs")
-  data_cc
+  return(results)
 }
 ```
 
@@ -159,26 +154,26 @@ that you write should be able to match this output. Please save your
 code to a file named complete.R. To run the submit script for this part,
 make sure your working directory has the file complete.R in it.
 
-    ##   id nobs
-    ## 1  1  117
+    ##      id nobs
+    ## [1,]  1  117
 
-    ##   id nobs
-    ## 1  2 1041
-    ## 2  4  474
-    ## 3  8  192
-    ## 4 10  148
-    ## 5 12   96
+    ##      id nobs
+    ## [1,]  2 1041
+    ## [2,]  4  474
+    ## [3,]  8  192
+    ## [4,] 10  148
+    ## [5,] 12   96
 
-    ##   id nobs
-    ## 1 30  932
-    ## 2 29  711
-    ## 3 28  475
-    ## 4 27  338
-    ## 5 26  586
-    ## 6 25  463
+    ##      id nobs
+    ## [1,] 25  463
+    ## [2,] 26  586
+    ## [3,] 27  338
+    ## [4,] 28  475
+    ## [5,] 29  711
+    ## [6,] 30  932
 
-    ##   id nobs
-    ## 1  3  243
+    ##      id nobs
+    ## [1,]  3  243
 
 -----
 
@@ -194,6 +189,39 @@ then the function should return a numeric vector of length 0. A
 prototype of this function follows
 
 ``` r
+complete_threshold <-
+  function(directory,
+           id = 1:332,
+           threshold = 0) {
+    ## 'directory' is a character vector of length 1 indicating the location of the CSV files
+    ## 'id' is an integer vector indicating the monitor ID numbers
+    ## Return a data frame of the form:
+    ## id  nodbs
+    ## 1  117
+    ## 2 1041
+    ## ...
+    ## where 'id' is the monitor ID number and the nobs is the number of complete cases
+    
+    #load files, extract complete cases only and split by monitor id
+    data <- load_files(directory, id)
+    data <- data[complete.cases(data), ]
+    data <- split(data, data$ID)
+    
+    results <- c()
+    
+    for (item in data) {
+      #pop monitor_id off the col with name ID
+      monitor_id <- item[1, 'ID']
+      num_obs <- nrow(item)
+      
+      if (num_obs > threshold) {
+        results <- rbind(results, item)
+      }
+    }
+    
+    return(results)
+  }
+
 corr <- function(directory, threshold = 0) {
   ## 'directory' is a character vector of length 1 indicating the location of the CSV files
   ## 'threshold' is the numeric vector of length 1 indicating the number of completely observed obervations
@@ -201,54 +229,27 @@ corr <- function(directory, threshold = 0) {
   ## NOTE: Do not round the results
   
   # vector to hold results of cor()
-  results <- c(0)
-  
-  old.dir <- getwd()
-  setwd(directory)
-  
-  data_cc <- data.frame()
-  
   id <- 1:332
+  results <- NULL
+  data <- complete_threshold(directory, id, threshold)
   
-  count <- 0
+  data_by_id <- NULL
   
-  for (val in id) {
-    data <- data.frame()
-    if (val < 10) {
-      data <-
-        rbind(data, read.csv(paste("00", val, ".csv", sep = ""), na.strings = "NA"))
-    } else if (val < 100) {
-      data <-
-        rbind(data, read.csv(paste("0", val, ".csv", sep = ""), na.strings = "NA"))
-    } else {
-      data <-
-        rbind(data, read.csv(paste(val, ".csv", sep = ""), na.strings = "NA"))
-    }
-    
-    num_complete_cases <- sum(complete.cases(data))
-    
-    if (num_complete_cases > threshold) {
-      data_cc <- data[complete.cases(data),]
-      
-      
-      x <- data_cc[, 2]
-      y <- data_cc[, 3]
-      
-      z <- cor(x,
-               y,
-               use = "complete.obs",
-               method = c("pearson", "kendall", "spearman"))
-      
-      if (count != 0) {
-        results <- c(results, z)
-      } else {
-        results <- c(z)
-      }
-      count <- count + 1
-    }
-    
+  if (!is.null(data)) {
+    data_by_id <- split(data, data$ID)
   }
-  setwd(old.dir)
+  
+  for (item in data_by_id) {
+    x <- item[, 2]
+    y <- item[, 3]
+    
+    z <- cor(x,
+             y,
+             use = "complete.obs",
+             method = c("pearson", "kendall", "spearman"))
+    
+    results <- c(results, z)
+  }
   
   return(results)
 }
@@ -268,21 +269,14 @@ part, make sure your working directory has the file corr.R in it.
 
 ``` r
 source("script/pollutantmean.R")
-cr <- corr("data/specdata", 150)
+cr <- corr("data/specdata/", 150)
 head(cr)
 ```
 
     ## [1] -0.01895754 -0.14051254 -0.04389737 -0.06815956 -0.12350667 -0.07588814
 
 ``` r
-summary(cr)
-```
-
-    ##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-    ## -0.21057 -0.04999  0.09463  0.12525  0.26844  0.76313
-
-``` r
-cr <- corr("data/specdata", 400)
+cr <- corr("data/specdata/", 400)
 head(cr)
 ```
 
@@ -296,21 +290,21 @@ summary(cr)
     ## -0.17623 -0.03109  0.10021  0.13969  0.26849  0.76313
 
 ``` r
-cr <- corr("data/specdata", 5000)
+cr <- corr("data/specdata/", 5000)
 head(cr)
 ```
 
-    ## [1] 0
+    ## NULL
 
 ``` r
 summary(cr)
 ```
 
-    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-    ##       0       0       0       0       0       0
+    ## Length  Class   Mode 
+    ##      0   NULL   NULL
 
 ``` r
-cr <- corr("data/specdata")
+cr <- corr("data/specdata/")
 head(cr)
 ```
 

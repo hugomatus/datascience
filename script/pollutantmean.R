@@ -41,7 +41,7 @@ complete <- function(directory, id = 1:332) {
   
   #load files, extract complete cases only and split by monitor id
   data <- load_files(directory, id)
-  data <- data[complete.cases(data), ]
+  data <- data[complete.cases(data),]
   data <- split(data, data$ID)
   
   results <- c()
@@ -63,15 +63,10 @@ complete_threshold <-
     ## 'directory' is a character vector of length 1 indicating the location of the CSV files
     ## 'id' is an integer vector indicating the monitor ID numbers
     ## Return a data frame of the form:
-    ## id  nodbs
-    ## 1  117
-    ## 2 1041
-    ## ...
-    ## where 'id' is the monitor ID number and the nobs is the number of complete cases
     
     #load files, extract complete cases only and split by monitor id
     data <- load_files(directory, id)
-    data <- data[complete.cases(data), ]
+    data <- data[complete.cases(data),]
     data <- split(data, data$ID)
     
     results <- c()
@@ -121,37 +116,28 @@ corr <- function(directory, threshold = 0) {
   return(results)
 }
 
-
-best <- function(state, outcome) {
+rank_by_outcome <- function(outcome) {
   ## Read outcome data
-  old.dir <- getwd()
+  ## Returns data.frame with cols: 
+  
   data.dir <- "data/rprog_data_ProgAssignment3-data/"
-  setwd(data.dir)
   
   data <-
     read.csv(
-      "outcome-of-care-measures.csv",
+      "data/rprog_data_ProgAssignment3-data/outcome-of-care-measures.csv",
       na.strings = "Not Available",
       stringsAsFactors = FALSE,
       check.names = TRUE
     )
   
-  setwd(old.dir)
   
   ## Check that state and outcome are valid
-  
   outcome_values <-
     c(
       "heart attack" = 4,
       "heart failure" = 5,
       "pneumonia" = 6
     )
-  
-  ## state check
-  if (length(which(state.abb == state)) == 0) {
-    stop(call. = FALSE,
-         paste("in best(", state, ", ", outcome, ")", " : invalid state"))
-  }
   
   ## outcome check
   if (length(which(names(outcome_values) == outcome)) == 0) {
@@ -162,43 +148,74 @@ best <- function(state, outcome) {
   ## Return hospital name in that state with lowest 30-day death
   ## rate
   
-  mortality_30_day <- data[, c(1, 2, 7, 11, 17, 23)]
-  
-  ## filter and get data for state requested
-  obs <- mortality_30_day[mortality_30_day[, 3] == state,]
+  obs <- data[, c(1, 2, 7, 11, 17, 23)]
   
   ## order filtered data by outcome and by hospital name
-  obs <- obs[order(obs[, outcome_values[outcome]], obs[, 2]),]
-  obs <- obs[complete.cases(obs[, outcome_values[outcome]]),]
+  obs <- obs[order(obs[, outcome_values[outcome]], obs[, 2]),  ]
   
-  return(head(obs[, c(2, outcome_values[outcome])]))
+  obs <- obs[complete.cases(obs[, outcome_values[outcome]]), ]
+  
+  results <- obs[,c(1,2,3,outcome_values[outcome])]
+  
+  names(results) <- c("Provider","Hospital","State","Outcome")
+  return(results)
+  
+}
+
+rank_by_state_outcome <- function(state, outcome) {
+  
+  ## Check that state and outcome are valid
+  outcome_values <-
+    c(
+      "heart attack",
+      "heart failure",
+      "pneumonia"
+    )
+  
+  ## state check
+  if (length(which(state.abb == state)) == 0) {
+    stop(call. = FALSE,
+         paste("in best(", state, ", ", outcome, ")", " : invalid state"))
+  }
+  
+  ## outcome check
+  if (length(which((outcome_values) == outcome)) == 0) {
+    stop(call. = FALSE,
+         paste("in best(", state, ", ", outcome, ")", " :  invalid outcome"))
+  }
+  
+  data <- rank_by_outcome(outcome)
+  
+  
+  ## Return hospital name in that state with lowest 30-day death
+  ## rate
+  
+  ## filter and get data for state requested
+  obs <- data[data[, "State"] == state, ]
+  
+  ## order filtered data by outcome and by hospital name
+  obs <- obs[order(obs[,"Outcome"], obs[, "State"]),  ]
+  obs <- obs[complete.cases(obs[, "Outcome"]), ]
+  return(obs)
   
 }
 
 
+best <- function(state, outcome) {
+ 
+  data <- rank_by_state_outcome(state,outcome) 
+  
+  return(data[1,2])
+  
+}  
+  
 rankhospital <- function(state, outcome, num = "best") {
-  ## Read outcome data
-  old.dir <- getwd()
-  data.dir <- "data/rprog_data_ProgAssignment3-data/"
-  setwd(data.dir)
-  
-  data <-
-    read.csv(
-      "outcome-of-care-measures.csv",
-      na.strings = "Not Available",
-      stringsAsFactors = FALSE,
-      check.names = TRUE
-    )
-  
-  setwd(old.dir)
-  
-  ## Check that state and outcome are valid
-  
+
   outcome_values <-
     c(
-      "heart attack" = 4,
-      "heart failure" = 5,
-      "pneumonia" = 6
+      "heart attack",
+      "heart failure",
+      "pneumonia"
     )
   
   ## state check
@@ -208,30 +225,21 @@ rankhospital <- function(state, outcome, num = "best") {
   }
   
   ## outcome check
-  if (length(which(names(outcome_values) == outcome)) == 0) {
+  if (length(which((outcome_values) == outcome)) == 0) {
     stop(call. = FALSE,
          paste("in best(", state, ", ", outcome, ")", " :  invalid outcome"))
   }
   
-  ## Return hospital name in that state with lowest 30-day death
-  ## rate
   
-  mortality_30_day <- data[, c(1, 2, 7, 11, 17, 23)]
-  
-  ## filter and get data for state requested
-  obs <- mortality_30_day[mortality_30_day[, 3] == state,]
-  
-  ## order filtered data by outcome and by hospital name
-  obs <- obs[order(obs[, outcome_values[outcome]], obs[, 2]),]
-  obs <- obs[complete.cases(obs[, outcome_values[outcome]]),]
+  obs <- rank_by_state_outcome(state,outcome)
   
   if (num == "best") {
-    obs <- obs[1, c(2, outcome_values[outcome])]
+    obs <- obs[1, c("Hospital", "Outcome")]
     
   } else if (num == "worst") {
-    obs <- (obs[nrow(obs), c(2, outcome_values[outcome])])
+    obs <- (obs[nrow(obs), c("Hospital","Outcome")])
   } else {
-    obs <- (obs[num, c(2, outcome_values[outcome])])
+    obs <- (obs[num, c("Hospital","Outcome")])
   }
   
   names(obs) <- c("Hospital", "Outcome")
@@ -253,10 +261,11 @@ rankall <- function(outcome, num = "best") {
   for (s in sort(state.abb)) {
     e <- rankhospital(s, outcome, num)
     
-    if (!is.na(e)) {
+    if (!is.na(e[1,1])) {
       df <- rbind(df, data.frame(e, "state" = s))
     }
   }
-  
   return(df)
 }
+
+

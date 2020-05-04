@@ -56,20 +56,16 @@ ___
 #### 1. Plot the 30-day mortality rates for heart attack
 
 ```{r}
-old.dir <- getwd()
-data.dir <- "data/rprog_data_ProgAssignment3-data/"
-setwd(data.dir)
+setwd("~/datascience/")
 outcome <-
-  read.csv("outcome-of-care-measures.csv", colClasses = "character")
+  read.csv("data/rprog_data_ProgAssignment3-data/outcome-of-care-measures.csv", colClasses = "character")
 str(outcome)
-setwd(old.dir)
-
 ```
 
 
 ```{r}
 outcome[,11] <- as.numeric(outcome[,11])
-hist(outcome[,11],col = 2, main = "Hospital.30.Day.Death",xlab = "Num Heart Attacks" )
+hist(outcome[,11],col = 2, main = "Hospital.30.Day.Death",xlab = "Heart Attacks" )
 ```
 
 ___
@@ -89,11 +85,11 @@ be sorted in alphabetical order and the first hospital in that set should be cho
 and “f” are tied for best, then hospital “b” should be returned).
 
 ```{r}
+setwd("~/datascience/")
+
 rank_by_outcome <- function(outcome) {
   ## Read outcome data
   ## Returns data.frame with cols: 
-  
-  data.dir <- "data/rprog_data_ProgAssignment3-data/"
   
   data <-
     read.csv(
@@ -180,7 +176,7 @@ best <- function(state, outcome) {
   
   return(data[1,2])
   
-}  
+} 
 ```
 
 The function should check the validity of its arguments. If an invalid state value is passed to best, the
@@ -191,6 +187,7 @@ message “invalid outcome”.
 #### Here are some sample output from the function.
 
 ```{r}
+setwd("~/datascience/")
 best("TX", "heart attack")
 best("TX", "heart failure")
 best("MD", "heart attack")
@@ -205,14 +202,7 @@ state (state), an outcome (outcome), and the ranking of a hospital in that state
 The function reads the outcome-of-care-measures.csv file and returns a character vector with the name
 of the hospital that has the ranking specified by the num argument. 
 
-For example, the call
-
-````{r}
-source("script/pollutantmean.R")
-rankhospital("MD", "heart failure", 5)
-````
-
-would return a character vector containing the name of the hospital with the 5th lowest 30-day death rate
+For example, the call rankhospital("MD", "heart failure", 5) would return a character vector containing the name of the hospital with the 5th lowest 30-day death rate
 for heart failure. The num argument can take values “best”, “worst”, or an integer indicating the ranking
 (smaller numbers are better). If the number given by num is larger than the number of hospitals in that
 state, then the function should return NA. Hospitals that do not have data on a particular outcome should
@@ -249,6 +239,7 @@ manner (i.e. where one vector is used to break ties in another vector).
 The function should use the following template.
 
 ```{r}
+setwd("~/datascience/")
 rankhospital <- function(state, outcome, num = "best") {
 
   outcome_values <-
@@ -290,7 +281,7 @@ rankhospital <- function(state, outcome, num = "best") {
 #### Here is some sample output from the function.
 
 ```{r}
-source("script/pollutantmean.R")
+setwd("~/datascience/")
 rankhospital("TX", "heart failure", 4)
 rankhospital("MD", "heart attack", "worst")
 rankhospital("MN", "heart attack", 5000)
@@ -349,12 +340,13 @@ return NA.
 
 
 ```{r}
-rankall("heart attack", "best")
-rankall("heart failure", "best")
-rankall("pneumonia", "best")
-rankall("heart attack", "worst")
-rankall("heart failure", "worst")
-rankall("pneumonia", "worts")
+setwd("~/datascience/")
+head(rankall("heart attack", "best"),3)
+head(rankall("heart failure", "best"),3)
+head(rankall("pneumonia", "best"),3)
+head(rankall("heart attack", "worst"),3)
+head(rankall("heart failure", "worst"),3)
+head(rankall("pneumonia", "worts"),3)
 
 ```
 

@@ -55,6 +55,7 @@ coded as NA.
 <!-- end list -->
 
 ``` r
+setwd("~/datascience/")
 ##load files
 load_files <- function(data.dir, id = 1:332) {
   data.file.names <- sort(list.files(data.dir), decreasing = FALSE)
@@ -92,6 +93,7 @@ that you write should be able to match this output. Please save your
 code to a file named pollutantmean.R.
 
 ``` r
+setwd("~/datascience/")
 source("script/pollutantmean.R")
 pollutantmean("data/specdata/", "sulfate", 1:10)
 ```
@@ -189,6 +191,7 @@ then the function should return a numeric vector of length 0. A
 prototype of this function follows
 
 ``` r
+setwd("~/datascience/")
 complete_threshold <-
   function(directory,
            id = 1:332,
@@ -268,6 +271,7 @@ save your code to a file named corr.R. To run the submit script for this
 part, make sure your working directory has the file corr.R in it.
 
 ``` r
+setwd("~/datascience/")
 source("script/pollutantmean.R")
 cr <- corr("data/specdata/", 150)
 head(cr)

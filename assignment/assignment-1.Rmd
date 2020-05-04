@@ -46,6 +46,7 @@ Write a function named 'pollutantmean' that calculates the mean of a pollutant (
 
 
 ```{r}
+setwd("~/datascience/")
 ##load files
 load_files <- function(data.dir, id = 1:332) {
   data.file.names <- sort(list.files(data.dir), decreasing = FALSE)
@@ -82,6 +83,7 @@ pollutantmean <- function(directory, pollutant, id = 1:2) {
 You can see some example output from this function below. The function that you write should be able to match this output. Please save your code to a file named pollutantmean.R.
 
 ```{r}
+setwd("~/datascience/")
 source("script/pollutantmean.R")
 pollutantmean("data/specdata/", "sulfate", 1:10)
 pollutantmean("data/specdata/", "nitrate", 70:72)
@@ -125,6 +127,7 @@ complete <- function(directory, id = 1:332) {
 You can see some example output from this function below. The function that you write should be able to match this output. Please save your code to a file named complete.R. To run the submit script for this part, make sure your working directory has the file complete.R in it.
 
 ```{r echo=FALSE}
+setwd("~/datascience/")
 source("script/pollutantmean.R")
 complete("data/specdata/", 1)
 complete("data/specdata/", c(2, 4, 8, 10, 12))
@@ -139,6 +142,7 @@ ___
 Write a function that takes a directory of data files and a threshold for complete cases and calculates the correlation between sulfate and nitrate for monitor locations where the number of completely observed cases (on all variables) is greater than the threshold. The function should return a vector of correlations for the monitors that meet the threshold requirement. If no monitors meet the threshold requirement, then the function should return a numeric vector of length 0. A prototype of this function follows
 
 ```{r}
+setwd("~/datascience/")
 complete_threshold <-
   function(directory,
            id = 1:332,
@@ -211,6 +215,7 @@ For this function you will need to use the 'cor' function in R which calculates 
 You can see some example output from this function below. The function that you write should be able to approximately match this output. Note that because of how R rounds and presents floating point numbers, the output you generate may differ slightly from the example output. Please save your code to a file named corr.R. To run the submit script for this part, make sure your working directory has the file corr.R in it.
 
 ```{r}
+setwd("~/datascience/")
 source("script/pollutantmean.R")
 cr <- corr("data/specdata/", 150)
 head(cr)

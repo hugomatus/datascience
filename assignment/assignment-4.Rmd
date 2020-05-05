@@ -19,6 +19,13 @@ output:
 
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_knit$set(root.dir = "")
+library(tidyverse)
+getwd()
+```
+
 
 #### Purpose
 
@@ -70,18 +77,28 @@ TIDYNG DATA STEPS
 ##### Download Wearable Data Set
 
 ```{r}
-
 setwd("~/datascience/")
-file.url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
 dest.file <- "data/zipped-data/wearable-data.zip"
-download.file(url = file.url,destfile = dest.file,quiet = TRUE,method = "curl",)
+file.url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+
+if (!file.exists(dest.file)) {
+  download.file(url = file.url,destfile = dest.file,quiet = TRUE,method = "curl")
+}
 ```
 
 ##### List Files included in Wearable Dataset
 
 ```{r size = 'tiny'}
 setwd("~/datascience/")
-unzip(zipfile = dest.file,list = TRUE)
+dir.extracted.to <- "data/UCI HAR Dataset"
+
+if (!file.exists(dir.extracted.to)) {
+  unzip(zipfile = dest.file,list = TRUE, exdir = "data/")
+} else (
+  list.files("data/UCI HAR Dataset")
+)
+
+
 ```
 
 ##### Extract Files included in Wearable Dataset
@@ -92,6 +109,228 @@ extract.dir <- "data/"
 unzip(zipfile = dest.file,list = FALSE,exdir = extract.dir, overwrite = TRUE)
 ```
 
+##### Loading Training Dataset(s)
+- x_train.txt
+- y_train.txt
+- subject_train.txt
+- activity_labels.txt
 
 
+##### Loading Training Dataset: x_train
 
+```{r}
+setwd("~/datascience/")
+file.name.x_train <- "data/UCI HAR Dataset/train/X_train.txt"
+
+x_train <- read.table(file.name.x_train,header = FALSE)
+dim(x_train)
+
+```
+
+##### Loading Training Dataset: y_train
+
+```{r}
+setwd("~/datascience/")
+file.name.y_train <- "data/UCI HAR Dataset/train/y_train.txt"
+
+y_train <- read.table(file.name.y_train,header = FALSE)
+dim(y_train)
+str(y_train)
+head(y_train,3)
+
+
+```
+
+
+##### Loading Training Dataset: subject_train
+
+```{r}
+setwd("~/datascience/")
+file.name.subject_train <- "data/UCI HAR Dataset/train/subject_train.txt"
+
+subject_train <- read.table(file.name.subject_train,header = FALSE)
+dim(subject_train)
+str(subject_train)
+head(subject_train,3)
+```
+
+##### Loading Training Dataset: features
+
+```{r}
+setwd("~/datascience/")
+file.name.features <- "data/UCI HAR Dataset/features.txt"
+
+features <- read.table(file.name.features,header = FALSE)
+
+dim(features)
+str(features)
+head(features,3)
+```
+
+
+```{r}
+#load activity labels
+setwd("~/datascience/")
+file.name.activity_labels <- "data/UCI HAR Dataset/activity_labels.txt"
+activity_labels <- read.table(file.name.activity_labels,header = FALSE)
+dim(activity_labels)
+str(activity_labels)
+head(activity_labels,3)
+```
+
+##### Setting descriptive feature names on : x_train
+
+```{r}
+setwd("~/datascience/")
+
+#replace '(' and ')' with empty space ''
+feature_names <- gsub("([()])", "", features$V2)
+
+# Make syntactically valid names out of character vectors.
+feature_names <- make.names(feature_names, unique = TRUE, allow_ = TRUE)
+
+# Make names more descriptive
+feature_names <- gsub("^t", "time", feature_names)
+feature_names <- gsub("^f", "frequency", feature_names)
+feature_names <- gsub(".mean", "Mean", feature_names)
+feature_names <- gsub(".std", "Std", feature_names)
+feature_names <- gsub(".gravity", "Gravity", feature_names)
+feature_names <- gsub("Freq", "Frequency", feature_names)
+feature_names <- gsub("Mag", "Magnitude", feature_names)
+feature_names <- gsub("Gyro", "Gyroscope", feature_names)
+feature_names <- gsub("Acc", "Accelerometer", feature_names)
+
+# set feature labels on x_train
+names(x_train) <- feature_names
+```
+
+
+##### Setting descriptive feature names and merging all Training dataset(s)
+
+```{r}
+setwd("~/datascience/")
+names(activity_labels) <- c("Activity_Id", "Activity")
+names(y_train) <- "Activity_Id"
+names(subject_train) <- "Subject"
+
+
+# column bind all training datasets
+train <- cbind(
+  x_train,
+  subject_train,
+  inner_join(activity_labels, y_train)
+)
+```
+
+
+##### Loading Test Dataset(s) and Merging
+
+- x_test.txt
+- y_test.txt
+- subject_ttest.txt
+
+
+##### Loading Test Dataset: x_test
+
+```{r}
+setwd("~/datascience/")
+file.name.x_test <- "data/UCI HAR Dataset/test/X_test.txt"
+
+x_test <- read.table(file.name.x_test,header = FALSE)
+dim(x_test)
+
+```
+
+##### Loading Test Dataset: y_test
+
+```{r}
+setwd("~/datascience/")
+file.name.y_test <- "data/UCI HAR Dataset/test/y_test.txt"
+
+y_test <- read.table(file.name.y_test,header = FALSE)
+dim(y_test)
+str(y_test)
+head(y_test,3)
+```
+
+
+##### Loading Test Dataset: subject_test
+
+```{r}
+setwd("~/datascience/")
+file.name.subject_test <- "data/UCI HAR Dataset/test/subject_test.txt"
+
+subject_test <- read.table(file.name.subject_test,header = FALSE)
+dim(subject_test)
+str(subject_test)
+head(subject_test,3)
+```
+
+##### Setting descriptive feature names and merging all Test dataset(s)
+
+```{r}
+setwd("~/datascience/")
+
+
+# Sets descriptive column names : X_Test, Y_Test and Subject_Test
+names(x_test) <- feature_names
+names(y_test) <- "Activity_Id"
+names(subject_test) <- "Subject"
+
+# column bind all test datasets
+test <- cbind(y_test, subject_test)
+test <- cbind(x_test, subject_test,
+              (inner_join(activity_labels, y_test)))
+
+dim(test)
+```
+
+##### Merging all Training and Test dataset(s)
+
+```{r}
+setwd("~/datascience/")
+
+data_set <- tbl_df(rbind(train, test))
+```
+
+
+#### Step 2: Extract only the measurements on the mean and standard deviation for each measurement.
+
+##### Select Feature Subset, Arrange/Group by Activity and Subject
+
+```{r}
+data_set_mean_std <- select(
+  data_set,
+  contains("mean"),
+  contains("std"),
+  contains("Activity"),
+  contains("Subject"),
+  -(contains("angle"))
+)
+
+
+# Arrange and Group by activity and subject
+arrange(data_set_mean_std, Activity, Subject)
+tidy_data_means_std <- data_set_mean_std %>%
+  group_by(Activity, Subject) %>%
+  summarise_all(funs(mean))
+
+# re-order columns
+tidy_data_means_std <-
+  select(
+    tidy_data_means_std,
+    Activity_Id,
+    Activity,
+    Subject,
+    timeBodyAccelerometerMean.X:frequencyBodyBodyGyroscopeJerkMagnitudeStd
+  )
+
+dim(tidy_data_means_std)
+str(tidy_data_means_std)
+
+# write tidy dataframe to txt file
+write.table(tidy_data_means_std,
+            "tidy_data.txt",
+            row.names = FALSE,
+            quote = FALSE)
+```
